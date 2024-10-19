@@ -1,38 +1,88 @@
-import * as React from "react"
+import React, { useState } from 'react';
 import {
   ChakraProvider,
   Box,
-  Text,
-  Link,
-  VStack,
-  Code,
   Grid,
   theme,
-} from "@chakra-ui/react"
-import { ColorModeSwitcher } from "./ColorModeSwitcher"
-import { Logo } from "./Logo"
+  Select,
+  Flex,
+} from "@chakra-ui/react";
+import { ColorModeSwitcher } from "./ColorModeSwitcher";
 
-export const App = () => (
-  <ChakraProvider theme={theme}>
-    <Box textAlign="center" fontSize="xl">
-      <Grid minH="100vh" p={3}>
-        <ColorModeSwitcher justifySelf="flex-end" />
-        <VStack spacing={8}>
-          <Logo h="40vmin" pointerEvents="none" />
-          <Text>
-            Edit <Code fontSize="xl">src/App.tsx</Code> and save to reload.
-          </Text>
-          <Link
-            color="teal.500"
-            href="https://chakra-ui.com"
-            fontSize="2xl"
-            target="_blank"
-            rel="noopener noreferrer"
+// Mock data for profiles and widgets
+const profiles = [
+  { id: 'base', name: 'Base Profile' },
+  { id: 'risk', name: 'Risk Management' },
+  { id: 'investment', name: 'Investment' },
+];
+
+const widgets = [
+  { id: 'w1', name: 'Account Summary', profiles: ['base'] },
+  { id: 'w2', name: 'Recent Transactions', profiles: ['base'] },
+  { id: 'w3', name: 'Currency Tracker', profiles: ['risk'] },
+  { id: 'w4', name: 'Stock Market', profiles: ['risk', 'investment'] },
+  { id: 'w5', name: 'Investment Portfolio', profiles: ['investment'] },
+];
+
+const Widget = ({ name }: { name: string }) => (
+  <Box
+    bg="white"
+    p={4}
+    borderRadius="md"
+    boxShadow="md"
+    minHeight="150px"
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+  >
+    {name}
+  </Box>
+);
+
+export const App = () => {
+  const [selectedProfiles, setSelectedProfiles] = useState(['base']);
+
+  const handleProfileChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(
+      event.target.selectedOptions,
+      (option) => option.value
+    );
+    setSelectedProfiles(selectedOptions);
+  };
+
+  const visibleWidgets = widgets.filter((widget) =>
+    widget.profiles.some((profile) => selectedProfiles.includes(profile))
+  );
+
+  return (
+    <ChakraProvider theme={theme}>
+      <Box minH="100vh" p={3}>
+        <Flex justifyContent="space-between" mb={4}>
+          <Select
+            placeholder="Select profiles"
+            multiple
+            value={selectedProfiles}
+            onChange={handleProfileChange}
+            maxWidth="300px"
           >
-            Learn Chakra
-          </Link>
-        </VStack>
-      </Grid>
-    </Box>
-  </ChakraProvider>
-)
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name}
+              </option>
+            ))}
+          </Select>
+          <ColorModeSwitcher />
+        </Flex>
+        <Grid
+          templateColumns="repeat(auto-fill, minmax(250px, 1fr))"
+          gap={4}
+          autoRows="minmax(150px, auto)"
+        >
+          {visibleWidgets.map((widget) => (
+            <Widget key={widget.id} name={widget.name} />
+          ))}
+        </Grid>
+      </Box>
+    </ChakraProvider>
+  );
+};
