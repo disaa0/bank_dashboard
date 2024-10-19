@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import {
   ChakraProvider,
   Box,
   Grid,
+  GridItem,
   theme,
   Text,
   VStack,
@@ -41,7 +42,7 @@ type Widget = {
 };
 
 const profiles: Profile[] = [
-  { id: 'base', name: 'Base Profile', fixed: true},
+  { id: 'base', name: 'Base Profile', fixed: true },
   { id: 'risk', name: 'Risk Management' },
   { id: 'investment', name: 'Investment' },
 ];
@@ -105,13 +106,13 @@ export const App: React.FC = () => {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
   const handleProfileToggle = (profileId: string) => {
+    if (profileId === 'base') return; // Prevent toggling the base profile
     setActiveProfiles(prev =>
       prev.includes(profileId)
         ? prev.filter(id => id !== profileId)
         : [...prev, profileId]
     );
   };
-
   const handleWidgetToggle = (widgetId: string) => {
     setActiveWidgets(prev =>
       prev.includes(widgetId)
@@ -120,11 +121,17 @@ export const App: React.FC = () => {
     );
   };
 
-  const visibleWidgets = widgets.filter(widget =>
+ const visibleWidgets = widgets.filter(widget =>
     activeWidgets.includes(widget.id) &&
     widget.profiles.some(profile => activeProfiles.includes(profile))
   );
 
+ // Ensure the base profile is always active
+  useEffect(() => {
+    if (!activeProfiles.includes('base')) {
+      setActiveProfiles(prev => ['base', ...prev]);
+    }
+  }, [activeProfiles]);
   return (
     <ChakraProvider theme={theme}>
       <Box minH="100vh" bg={bgColor} p={6}>
@@ -149,6 +156,7 @@ export const App: React.FC = () => {
                             key={profile.id}
                             isChecked={activeProfiles.includes(profile.id)}
                             onChange={() => handleProfileToggle(profile.id)}
+                            isDisabled={profile.fixed}
                           >
                             {profile.name}
                           </Checkbox>
@@ -182,15 +190,27 @@ export const App: React.FC = () => {
               <ColorModeSwitcher />
             </HStack>
           </HStack>
-          <Grid
-            templateColumns="repeat(6, 1fr)"
-            gap={6}
-            autoRows="minmax(120px, auto)"
-          >
-            {visibleWidgets.map((widget) => (
-              <Widget key={widget.id} name={widget.name} size={widget.size} icon={widget.icon} />
-            ))}
-          </Grid>
+      <Grid
+        templateColumns="repeat(9, 1fr)"
+        gap={6}
+        autoRows="minmax(120px, auto)"
+      >
+        {visibleWidgets.map((widget) => {
+          const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
+          if (baseLayout) {
+            return (
+              <GridItem key={widget.id} colSpan={baseLayout.colSpan} rowSpan={baseLayout.rowSpan}>
+                <Widget name={widget.name} size={widget.size} icon={widget.icon} />
+              </GridItem>
+            );
+          }
+          return (
+            <GridItem key={widget.id} colSpan={widgetSizes[widget.size].colSpan} rowSpan={widgetSizes[widget.size].rowSpan}>
+              <Widget name={widget.name} size={widget.size} icon={widget.icon} />
+            </GridItem>
+          );
+        })}
+      </Grid>
         </VStack>
       </Box>
     </ChakraProvider>
