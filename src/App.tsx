@@ -20,10 +20,12 @@ import {
   PopoverCloseButton,
   Checkbox,
   Divider,
+  Link,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
-import { FiDollarSign, FiTrendingUp, FiGlobe, FiPieChart, FiActivity, FiSettings } from "react-icons/fi";
+import { FiMail, FiDollarSign, FiTrendingUp, FiGlobe, FiPieChart, FiActivity, FiSettings } from "react-icons/fi";
 import { IconType } from 'react-icons';
+import { Image } from "@chakra-ui/react";
 
 type Profile = {
   id: string;
@@ -66,7 +68,7 @@ const widgetSizes: Record<WidgetSize, { rowSpan: number; colSpan: number }> = {
 };
 
 const baseProfileLayout = [
-  { id: 'w1', colSpan: 2, rowSpan: 6 },
+  { id: 'w1', colSpan: 2, rowSpan: 3 },
   { id: 'w2', colSpan: 3, rowSpan: 3 },
 ];
 
@@ -80,6 +82,143 @@ type WidgetProps = {
 
 const Widget: React.FC<WidgetProps> = ({ name, size, icon: IconComponent, rowSpan, colSpan }) => {
   const bgColor = useColorModeValue('white', 'gray.700');
+{/* Account Summary*/}
+if (name === 'Account Summary') {
+  const recentLinks = [
+    { id: 1, label: 'Help', url: '/help' },
+    { id: 2, label: 'About Us', url: '/about' },
+    { id: 3, label: 'Contact Support', url: '/contact' },
+  ];
+  return (
+    <Box
+      bg={bgColor}
+      p={4}
+      borderRadius="lg"
+      boxShadow="lg"
+      gridRow={`span ${rowSpan}`}
+      gridColumn={`span ${colSpan}`}
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
+      transition="all 0.3s"
+      _hover={{ transform: 'translateY(-5px)', boxShadow: 'xl' }}
+    >
+  
+      <HStack
+        spacing={4}
+        alignItems="center"
+        bgGradient="linear(to-r, blue.500, blue.300)"
+        p={4} 
+        borderRadius="lg"
+        boxShadow="md"
+        mb={3} 
+      >
+        <Box position="relative">
+          <Image
+            src="profile.jpg"
+            alt="Profile Picture"
+            borderRadius="full"
+            boxSize="70px" 
+            border="3px solid white"
+            />
+        </Box>
+        <VStack align="start" spacing={0.5}>
+          <Text fontWeight="bold" fontSize="xl" color="white">
+            John Doe
+          </Text>
+          <Text fontSize="sm" color="whiteAlpha.800">
+            Senior Financial Analyst
+          </Text>
+          <HStack spacing={2}>
+            <Text color="white" fontSize="xs">
+              Account: 123456789
+            </Text>
+            <Text color="white" fontSize="xs">
+              Balance: $10,000
+            </Text>
+          </HStack>
+        </VStack>
+      </HStack>
+
+     
+      <VStack spacing={2} align="stretch" mb={2}>
+       
+        <Box position="relative" w="100%">
+          <Button leftIcon={<Icon as={FiMail} />} w="100%" p={3} fontSize="sm">Email</Button>
+          <Box
+            position="absolute"
+            top="-8px"
+            right="-8px"
+            bg="red.500"
+            color="white"
+            borderRadius="full"
+            boxSize="20px"
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            fontSize="xs"
+          >
+            3 
+          </Box>
+        </Box>
+
+        <Box position="relative" w="100%">
+          <Button leftIcon={<Icon as={FiGlobe} />} w="100%" p={3} fontSize="sm">GPP</Button>
+          <Box
+            position="absolute"
+            top="-8px"
+            right="-8px"
+            bg="red.500"
+            color="white"
+            borderRadius="full"
+            boxSize="20px"
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            fontSize="xs"
+          >
+            0 
+          </Box>
+        </Box>
+
+    
+        <Box position="relative" w="100%">
+          <Button leftIcon={<Icon as={FiTrendingUp} />} w="100%" p={3} fontSize="sm">Overview</Button>
+          <Box
+            position="absolute"
+            top="-8px"
+            right="-8px"
+            bg="red.500"
+            color="white"
+            borderRadius="full"
+            boxSize="20px"
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            fontSize="xs"
+          >
+            0 
+          </Box>
+        </Box>
+      </VStack>
+
+  
+      <Box mt={2}>
+      <Text fontWeight="bold">Quick Access</Text>
+      <VStack spacing={1} mt={1} align="start"> 
+        {recentLinks.map(link => (
+          <Text key={link.id} fontSize="sm">
+            <Link color="blue.500" href={link.url} isExternal>
+              {link.label}
+            </Link>
+          </Text>
+        ))}
+      </VStack>
+    </Box>
+    </Box>
+  );
+}
+
 
   return (
     <Box
