@@ -21,11 +21,15 @@ import {
   Checkbox,
   Divider,
   Link,
+  Image,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
 import { FiMail, FiDollarSign, FiTrendingUp, FiGlobe, FiPieChart, FiActivity, FiSettings } from "react-icons/fi";
 import { IconType } from 'react-icons';
-import { Image } from "@chakra-ui/react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF5555', '#6A5ACD'];
 
 type Profile = {
   id: string;
@@ -33,7 +37,7 @@ type Profile = {
   fixed?: boolean;
 };
 
-type WidgetSize = 'small' | 'medium' | 'large' | 'v_medium' | 'v_large' | 'v_xl' | 'v_xxl';
+type WidgetSize = 'small' | 'medium' | 'large' | 'large2' | 'v_medium' | 'v_large' | 'v_xl' | 'v_xxl';
 
 type Widget = {
   id: string;
@@ -55,12 +59,14 @@ const widgets: Widget[] = [
   { id: 'w3', name: 'Currency Tracker', profiles: ['risk'], size: 'small', icon: FiGlobe },
   { id: 'w4', name: 'Stock Market', profiles: ['risk', 'investment'], size: 'medium', icon: FiTrendingUp },
   { id: 'w5', name: 'Investment Portfolio', profiles: ['investment'], size: 'medium', icon: FiPieChart },
+  { id: 'w6', name: 'Total Balance', profiles: ['base'], size: 'large2', icon: FiDollarSign },
 ];
 
 const widgetSizes: Record<WidgetSize, { rowSpan: number; colSpan: number }> = {
   small: { rowSpan: 1, colSpan: 1 },
   medium: { rowSpan: 1, colSpan: 2 },
   large: { rowSpan: 5, colSpan: 4 },
+  large2: { rowSpan: 4, colSpan: 4},
   v_medium: { rowSpan: 2, colSpan: 2 },
   v_large: { rowSpan: 3, colSpan: 2 },
   v_xl: { rowSpan: 4, colSpan: 2 },
@@ -71,6 +77,87 @@ const baseProfileLayout = [
   { id: 'w1', colSpan: 2, rowSpan: 3 },
   { id: 'w2', colSpan: 3, rowSpan: 3 },
 ];
+
+const TotalBalanceWidget: React.FC<WidgetProps> = ({ rowSpan, colSpan }) => {
+  const bgColor = useColorModeValue('white', 'gray.700');
+  const data = [
+    { name: 'Account', value: 5497356.12 },
+    { name: 'Loans', value: 1724546.05 },
+    { name: 'Guarantees', value: 497356.12 },
+    { name: 'Investment Products', value: 7356.12 },
+    { name: 'Other Account', value: 9564.12 },
+    { name: 'Another Account', value: 4954.24 },
+  ];
+
+  const threshold = 0.01; // 1%
+  const finalData = data.reduce((acc, entry) => {
+    if (entry.value < threshold) {
+      const combined = acc.find(item => item.name === 'Others');
+      if (combined) {
+        combined.value += entry.value;
+      } else {
+        acc.push({ name: 'Others', value: entry.value });
+      }
+    } else {
+      acc.push(entry);
+    }
+    return acc;
+  }, [] as { name: string; value: number }[]);
+
+  return (
+    <Box
+      bg={bgColor}
+      p={4}
+      borderRadius="lg"
+      boxShadow="lg"
+      gridRow={`span ${rowSpan}`}
+      gridColumn={`span ${colSpan}`}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Text fontWeight="bold" fontSize="xl">Total Balance</Text>
+      <Text fontSize="lg" color="gray.600">€123.456.789.00</Text>
+
+      <HStack spacing={4} mt={4}>
+        <Box flex="1" display="flex" justifyContent="center">
+          <ResponsiveContainer width={300} height={300}>
+            <PieChart>
+              <Pie
+                data={finalData}
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                innerRadius={60} 
+                dataKey="value"
+              >
+                {finalData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+
+        <VStack spacing={1} align="start">
+          {finalData.map((entry, index) => (
+            <HStack key={entry.name} spacing={2}>
+              <Box
+                width="15px"
+                height="15px"
+                backgroundColor={COLORS[index % COLORS.length]}
+                borderRadius="md"
+              />
+              <Text fontSize="sm">{`${entry.name}: ${(entry.value * 100 / finalData.reduce((sum, item) => sum + item.value, 0)).toFixed(2)}%`}</Text>
+            </HStack>
+          ))}
+        </VStack>
+      </HStack>
+    </Box>
+  );
+};
 
 type WidgetProps = {
   name: string;
@@ -332,25 +419,39 @@ export const App: React.FC = () => {
             </HStack>
           </HStack>
           <Grid
-            templateColumns="repeat(9, 1fr)"
-            gap={6}
-            autoRows="minmax(120px, auto)"
-          >
-            {visibleWidgets.map((widget) => {
-              const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
-              const { rowSpan, colSpan } = baseLayout || widgetSizes[widget.size];
-              return (
-                <Widget
-                  key={widget.id}
-                  name={widget.name}
-                  size={widget.size}
-                  icon={widget.icon}
-                  rowSpan={rowSpan}
-                  colSpan={colSpan}
-                />
-              );
-            })}
-          </Grid>
+  templateColumns="repeat(9, 1fr)"
+  gap={6}
+  autoRows="minmax(120px, auto)"
+>
+{visibleWidgets.map((widget) => {
+  const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
+  const { rowSpan, colSpan } = baseLayout || widgetSizes[widget.size];
+
+  if (widget.id === 'w6') {
+    return (
+      <TotalBalanceWidget
+        key={widget.id}
+        rowSpan={rowSpan}
+        colSpan={colSpan}
+        name={widget.name} // Add the name
+        size={widget.size} // Add the size
+        icon={widget.icon} // Add the icon
+      />
+    );
+  }
+
+  return (
+    <Widget
+      key={widget.id}
+      name={widget.name}
+      size={widget.size}
+      icon={widget.icon}
+      rowSpan={rowSpan}
+      colSpan={colSpan}
+    />
+  );
+})}
+</Grid>
         </VStack>
       </Box>
     </ChakraProvider>
