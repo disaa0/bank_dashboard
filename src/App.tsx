@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChakraProvider,
   Box,
@@ -31,7 +31,7 @@ type Profile = {
   fixed?: boolean;
 };
 
-type WidgetSize = 'small' | 'medium' | 'large' | 'v_medium' | 'v_large';
+type WidgetSize = 'small' | 'medium' | 'large' | 'v_medium' | 'v_large' | 'v_xl' | 'v_xxl';
 
 type Widget = {
   id: string;
@@ -48,36 +48,38 @@ const profiles: Profile[] = [
 ];
 
 const widgets: Widget[] = [
-  { id: 'w1', name: 'Account Summary', profiles: ['base'], size: 'v_large', icon: FiDollarSign },
+  { id: 'w1', name: 'Account Summary', profiles: ['base'], size: 'v_xxl', icon: FiDollarSign },
   { id: 'w2', name: 'Recent Transactions', profiles: ['base'], size: 'large', icon: FiActivity },
   { id: 'w3', name: 'Currency Tracker', profiles: ['risk'], size: 'small', icon: FiGlobe },
   { id: 'w4', name: 'Stock Market', profiles: ['risk', 'investment'], size: 'medium', icon: FiTrendingUp },
-  { id: 'w5', name: 'Investment Portfolio', profiles: ['investment'], size: 'large', icon: FiPieChart },
-];
-
-// Define an explicit layout for the base profile
-const baseProfileLayout = [
-  { id: 'w1', colSpan: 4, rowSpan: 1 },
-  { id: 'w2', colSpan: 5, rowSpan: 2 },
+  { id: 'w5', name: 'Investment Portfolio', profiles: ['investment'], size: 'medium', icon: FiPieChart },
 ];
 
 const widgetSizes: Record<WidgetSize, { rowSpan: number; colSpan: number }> = {
   small: { rowSpan: 1, colSpan: 1 },
   medium: { rowSpan: 1, colSpan: 2 },
-  large: { rowSpan: 2, colSpan: 2 },
-  v_medium: { rowSpan: 2, colSpan: 1 },
-  v_large: { rowSpan: 3, colSpan: 1 },
+  large: { rowSpan: 5, colSpan: 4 },
+  v_medium: { rowSpan: 2, colSpan: 2 },
+  v_large: { rowSpan: 3, colSpan: 2 },
+  v_xl: { rowSpan: 4, colSpan: 2 },
+  v_xxl: { rowSpan: 5, colSpan: 2 },
 };
+
+const baseProfileLayout = [
+  { id: 'w1', colSpan: 2, rowSpan: 6 },
+  { id: 'w2', colSpan: 3, rowSpan: 3 },
+];
 
 type WidgetProps = {
   name: string;
   size: WidgetSize;
   icon: IconType;
+  rowSpan: number;
+  colSpan: number;
 };
 
-const Widget: React.FC<WidgetProps> = ({ name, size, icon: IconComponent }) => {
+const Widget: React.FC<WidgetProps> = ({ name, size, icon: IconComponent, rowSpan, colSpan }) => {
   const bgColor = useColorModeValue('white', 'gray.700');
-  const { rowSpan, colSpan } = widgetSizes[size];
 
   return (
     <Box
@@ -121,12 +123,12 @@ export const App: React.FC = () => {
     );
   };
 
- const visibleWidgets = widgets.filter(widget =>
+  const visibleWidgets = widgets.filter(widget =>
     activeWidgets.includes(widget.id) &&
     widget.profiles.some(profile => activeProfiles.includes(profile))
   );
 
- // Ensure the base profile is always active
+  // Ensure the base profile is always active
   useEffect(() => {
     if (!activeProfiles.includes('base')) {
       setActiveProfiles(prev => ['base', ...prev]);
@@ -190,27 +192,26 @@ export const App: React.FC = () => {
               <ColorModeSwitcher />
             </HStack>
           </HStack>
-      <Grid
-        templateColumns="repeat(9, 1fr)"
-        gap={6}
-        autoRows="minmax(120px, auto)"
-      >
-        {visibleWidgets.map((widget) => {
-          const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
-          if (baseLayout) {
-            return (
-              <GridItem key={widget.id} colSpan={baseLayout.colSpan} rowSpan={baseLayout.rowSpan}>
-                <Widget name={widget.name} size={widget.size} icon={widget.icon} />
-              </GridItem>
-            );
-          }
-          return (
-            <GridItem key={widget.id} colSpan={widgetSizes[widget.size].colSpan} rowSpan={widgetSizes[widget.size].rowSpan}>
-              <Widget name={widget.name} size={widget.size} icon={widget.icon} />
-            </GridItem>
-          );
-        })}
-      </Grid>
+          <Grid
+            templateColumns="repeat(9, 1fr)"
+            gap={6}
+            autoRows="minmax(120px, auto)"
+          >
+            {visibleWidgets.map((widget) => {
+              const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
+              const { rowSpan, colSpan } = baseLayout || widgetSizes[widget.size];
+              return (
+                <Widget
+                  key={widget.id}
+                  name={widget.name}
+                  size={widget.size}
+                  icon={widget.icon}
+                  rowSpan={rowSpan}
+                  colSpan={colSpan}
+                />
+              );
+            })}
+          </Grid>
         </VStack>
       </Box>
     </ChakraProvider>
