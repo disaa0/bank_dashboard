@@ -10,7 +10,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { FiMail, FiGlobe, FiTrendingUp } from "react-icons/fi";
-
+import KutzhanPhoto from './image/Kutzhan_Alisher_Photo.jpg'; 
 interface RecentLink {
   id: number;
   label: string;
@@ -38,7 +38,7 @@ export const AccountSummaryWidget: React.FC = () => {
         boxShadow="md"
       >
         <Image
-          src="/api/placeholder/70/70"
+          src={KutzhanPhoto}
           alt="Profile Picture"
           borderRadius="full"
           boxSize="70px"
@@ -46,7 +46,7 @@ export const AccountSummaryWidget: React.FC = () => {
         />
         <VStack align="start" spacing={0.5}>
           <Text fontWeight="bold" fontSize="xl" color="white">
-            John Doe
+            Kutzhan Alisher
           </Text>
           <Text fontSize="sm" color="whiteAlpha.800">
             Company name

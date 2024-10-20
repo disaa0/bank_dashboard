@@ -34,6 +34,7 @@ import {
   AccountSummaryWidget,
   RecentTransactionsWidget,
   NewsWidget,
+  TotalBalanceWidget,
 } from './components';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -136,6 +137,18 @@ const widgets: Widget[] = [
     minH: 3,
     maxW: 5,
     maxH: 5
+  },
+  {
+    id: 'w6',
+    name: 'Topics',
+    profiles: ['base'],
+    size: 'large',
+    icon: FiTrendingUp,
+    content: <TotalBalanceWidget />,
+    minW: 3,
+    minH: 8,
+    maxW: 8,
+    maxH: 8
   },
 ];
 
