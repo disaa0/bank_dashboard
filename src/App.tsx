@@ -82,9 +82,9 @@ const widgets: Widget[] = [
     size: 'v_xxl',
     icon: FiDollarSign,
     content: <AccountSummaryWidget />,
-    minW: 3,
+    minW: 4,
     minH: 8,
-    maxW: 4,
+    maxW: 8,
     maxH: 8
   },
   {
