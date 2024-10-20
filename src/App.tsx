@@ -60,6 +60,7 @@ const widgets: Widget[] = [
   { id: 'w4', name: 'Stock Market', profiles: ['risk', 'investment'], size: 'medium', icon: FiTrendingUp },
   { id: 'w5', name: 'Investment Portfolio', profiles: ['investment'], size: 'medium', icon: FiPieChart },
   { id: 'w6', name: 'Total Balance', profiles: ['base'], size: 'large2', icon: FiDollarSign },
+  { id: 'w7', name: 'Most Used Account', profiles: ['base'], size: 'large', icon: FiActivity }, // Add this line
 ];
 
 const widgetSizes: Record<WidgetSize, { rowSpan: number; colSpan: number }> = {
@@ -77,7 +78,74 @@ const baseProfileLayout = [
   { id: 'w1', colSpan: 2, rowSpan: 3 },
   { id: 'w2', colSpan: 3, rowSpan: 3 },
 ];
+const RecentTransactionsWidget: React.FC<{ rowSpan: number; colSpan: number }> = ({ rowSpan, colSpan }) => {
+  const [showDetails, setShowDetails] = useState(false); // State to manage the toggle
+  const transactions = [
+    {
+      id: 1,
+      accountName: "Premium Business Account",
+      accountNumber: "DE99 5004 0000 1122 3344 55",
+      amount: 25000,
+      type: 'Deposit',
+      date: '2024-10-20',
+    },
+    {
+      id: 2,
+      accountName: "Savings Account",
+      accountNumber: "DE22 5004 0000 1122 3344 56",
+      amount: -200,
+      type: 'Withdrawal',
+      date: '2024-10-19',
+    },
+    {
+      id: 3,
+      accountName: "Investment Account",
+      accountNumber: "DE33 5004 0000 1122 3344 57",
+      amount: 150,
+      type: 'Deposit',
+      date: '2024-10-18',
+    },
+  ];
 
+  return (
+    <Box
+      p={4}
+      bg="white"
+      borderRadius="lg"
+      boxShadow="lg"
+      gridRow={`span ${rowSpan}`}
+      gridColumn={`span ${colSpan}`}
+    >
+      <HStack justifyContent="space-between" mb={4}>
+        <Text fontWeight="bold" fontSize="xl">Most Used Accounts</Text>
+        <Button onClick={() => setShowDetails(!showDetails)}>
+          {showDetails ? 'Hide Details' : 'Show Details'}
+        </Button>
+      </HStack>
+
+      <VStack spacing={4} align="start">
+        {transactions.map(transaction => (
+          <Box key={transaction.id} borderWidth={1} borderRadius="lg" p={2} width="100%">
+            {showDetails && (
+              <>
+                <Text fontWeight="bold">{transaction.accountName}</Text>
+                <Text fontSize="sm" color="gray.500">
+                  {transaction.accountNumber}
+                </Text>
+              </>
+            )}
+            <HStack spacing={2} marginTop={1}>
+              <Text fontSize="md" color={transaction.amount > 0 ? 'green.500' : 'red.500'}>
+                {transaction.type}: {transaction.amount > 0 ? '+' : ''}{transaction.amount} €
+              </Text>
+              <Text fontSize="sm" color="gray.500">({transaction.date})</Text>
+            </HStack>
+          </Box>
+        ))}
+      </VStack>
+    </Box>
+  );
+};
 const TotalBalanceWidget: React.FC<WidgetProps> = ({ rowSpan, colSpan }) => {
   const bgColor = useColorModeValue('white', 'gray.700');
   const data = [
@@ -426,6 +494,15 @@ export const App: React.FC = () => {
 {visibleWidgets.map((widget) => {
   const baseLayout = baseProfileLayout.find(item => item.id === widget.id);
   const { rowSpan, colSpan } = baseLayout || widgetSizes[widget.size];
+  if (widget.id === 'w7') { 
+    return (
+      <RecentTransactionsWidget
+        key={widget.id}
+        rowSpan={rowSpan}
+        colSpan={colSpan}
+      />
+    );
+  }
 
   if (widget.id === 'w6') {
     return (
@@ -433,9 +510,9 @@ export const App: React.FC = () => {
         key={widget.id}
         rowSpan={rowSpan}
         colSpan={colSpan}
-        name={widget.name} // Add the name
-        size={widget.size} // Add the size
-        icon={widget.icon} // Add the icon
+        name={widget.name} 
+        size={widget.size} 
+        icon={widget.icon} 
       />
     );
   }
