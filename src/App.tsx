@@ -28,9 +28,10 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import {
-  TopicsWidget
+  TopicsWidget,
+  AccountSummaryWidget,
 } from './components';
-
+import RecentTransactionsWidget from './components/RecentTransactionsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -80,7 +81,7 @@ const widgets: Widget[] = [
     profiles: ['base'],
     size: 'v_xxl',
     icon: FiDollarSign,
-    content: <Text>Account Summary Content</Text>,
+    content: <AccountSummaryWidget />,
     minW: 3,
     minH: 8,
     maxW: 4,
@@ -92,7 +93,7 @@ const widgets: Widget[] = [
     profiles: ['base'],
     size: 'large',
     icon: FiActivity,
-    content: <Text>Recent Transactions Content</Text>,
+    content: <RecentTransactionsWidget />,
     minW: 3,
     minH: 3,
     maxW: 6,
@@ -127,8 +128,8 @@ const widgets: Widget[] = [
     name: 'Topics',
     profiles: ['investment', 'risk'],
     size: 'large',
-    icon:FiTrendingUp,
-    content:<TopicsWidget />,
+    icon: FiTrendingUp,
+    content: <TopicsWidget />,
     minW: 3,
     minH: 3,
     maxW: 5,
