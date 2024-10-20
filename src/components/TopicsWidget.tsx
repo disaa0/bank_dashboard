@@ -64,7 +64,7 @@ const TopicItem: React.FC<TopicItemProps> = ({ topic, onRemove, onShowDetails })
   const changeColor = parseFloat(topic.change) >= 0 ? 'green.500' : 'red.500';
 
   return (
-    <WrapItem>
+    <Box>
       <Box bg={bgColor} p={2} borderRadius="md" width="200px" boxShadow="sm">
         <HStack justifyContent="space-between">
           <VStack align="start" spacing={0}>
@@ -95,9 +95,11 @@ const TopicItem: React.FC<TopicItemProps> = ({ topic, onRemove, onShowDetails })
           </HStack>
         </HStack>
       </Box>
-    </WrapItem>
+    </Box>
   );
 };
+
+const LOCAL_STORAGE_KEY = 'topics';
 
 const TopicsWidget: React.FC = () => {
   const [topics, setTopics] = useState<TopicData[]>([]);
@@ -108,12 +110,44 @@ const TopicsWidget: React.FC = () => {
   const webSocketRef = useRef<WebSocket | null>(null);
   const toast = useToast();
 
-  useEffect(() => {
-    // Load topics from local storage
-    const savedTopics = localStorage.getItem('topics');
-    if (savedTopics) {
-      setTopics(JSON.parse(savedTopics));
+  const loadTopicsFromLocalStorage = useCallback(() => {
+    try {
+      const savedTopics = localStorage.getItem(LOCAL_STORAGE_KEY);
+      console.log('Raw saved topics:', savedTopics);
+      if (savedTopics) {
+        const parsedTopics = JSON.parse(savedTopics);
+        console.log('Parsed topics:', parsedTopics);
+        if (Array.isArray(parsedTopics)) {
+          setTopics(parsedTopics);
+          console.log('Topics loaded from local storage:', parsedTopics);
+        } else {
+          console.error('Saved topics is not an array:', parsedTopics);
+          toast({
+            title: "Error loading topics",
+            description: "The saved topics data is invalid. Resetting to default.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+          setTopics([]);
+        }
+      } else {
+        console.log('No topics found in local storage');
+      }
+    } catch (error) {
+      console.error('Error loading topics from local storage:', error);
+      toast({
+        title: "Error loading topics",
+        description: "There was an issue loading your saved topics. Please try refreshing the page.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
+  }, [toast]);
+
+  useEffect(() => {
+    loadTopicsFromLocalStorage();
 
     // Initialize WebSocket connection
     webSocketRef.current = mockWebSocket as unknown as WebSocket;
@@ -124,12 +158,24 @@ const TopicsWidget: React.FC = () => {
         webSocketRef.current.close();
       }
     };
-  }, []);
+  }, [loadTopicsFromLocalStorage]);
 
   useEffect(() => {
     // Save topics to local storage whenever they change
-    localStorage.setItem('topics', JSON.stringify(topics));
-  }, [topics]);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(topics));
+      console.log('Topics saved to local storage:', topics);
+    } catch (error) {
+      console.error('Error saving topics to local storage:', error);
+      toast({
+        title: "Error saving topics",
+        description: "There was an issue saving your topics. Some changes may not persist.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [topics, toast]);
 
   const handleWebSocketMessage = (event: { data: string }) => {
     const updatedTopic = JSON.parse(event.data) as TopicData;
@@ -156,9 +202,19 @@ const TopicsWidget: React.FC = () => {
     debouncedSearch(searchTerm);
   }, [searchTerm, debouncedSearch]);
 
+
   const addTopic = (topic: TopicData) => {
     if (!topics.some(t => t.name === topic.name)) {
-      setTopics([...topics, topic]);
+      setTopics(prevTopics => {
+        const newTopics = [...prevTopics, topic];
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newTopics));
+          console.log('Topics saved after addition:', newTopics);
+        } catch (error) {
+          console.error('Error saving topics after addition:', error);
+        }
+        return newTopics;
+      });
       if (webSocketRef.current) {
         webSocketRef.current.send(JSON.stringify({ action: 'subscribe', topic: topic.name }));
       }
@@ -175,7 +231,16 @@ const TopicsWidget: React.FC = () => {
   };
 
   const removeTopic = (topicToRemove: TopicData) => {
-    setTopics(topics.filter(topic => topic.name !== topicToRemove.name));
+    setTopics(prevTopics => {
+      const newTopics = prevTopics.filter(topic => topic.name !== topicToRemove.name);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newTopics));
+        console.log('Topics saved after removal:', newTopics);
+      } catch (error) {
+        console.error('Error saving topics after removal:', error);
+      }
+      return newTopics;
+    });
     if (webSocketRef.current) {
       webSocketRef.current.send(JSON.stringify({ action: 'unsubscribe', topic: topicToRemove.name }));
     }
@@ -202,6 +267,7 @@ const TopicsWidget: React.FC = () => {
       }
     });
   };
+
 
   const groupedTopics = topics.reduce((acc, topic) => {
     if (!acc[topic.category]) {
@@ -311,7 +377,10 @@ const TopicsWidget: React.FC = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </Box>
+      <Button onClick={loadTopicsFromLocalStorage} size="sm" mt={2}>
+        Reload Topics
+      </Button>
+    </Box >
   );
 };
 export default TopicsWidget;

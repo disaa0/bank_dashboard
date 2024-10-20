@@ -28,10 +28,13 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import debounce from 'lodash/debounce';
 
-import {
-  TopicsWidget
-} from './components';
 
+import {
+  TopicsWidget,
+  AccountSummaryWidget,
+  RecentTransactionsWidget,
+  NewsWidget,
+} from './components';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -80,7 +83,7 @@ const widgets: Widget[] = [
     profiles: ['base'],
     size: 'v_xxl',
     icon: FiDollarSign,
-    content: <Text>Account Summary Content</Text>,
+    content: <AccountSummaryWidget />,
     minW: 3,
     minH: 8,
     maxW: 4,
@@ -92,7 +95,7 @@ const widgets: Widget[] = [
     profiles: ['base'],
     size: 'large',
     icon: FiActivity,
-    content: <Text>Recent Transactions Content</Text>,
+    content: <RecentTransactionsWidget />,
     minW: 3,
     minH: 3,
     maxW: 6,
@@ -100,20 +103,20 @@ const widgets: Widget[] = [
   },
   {
     id: 'w3',
-    name: 'Currency Tracker',
+    name: 'News',
     profiles: ['investment'],
-    size: 'medium',
+    size: 'large',
     icon: FiGlobe,
-    content: <Text>Currency Tracker Content</Text>,
+    content: <NewsWidget />,
     minW: 3,
-    minH: 3,
-    maxW: 4,
-    maxH: 4
+    minH: 4,
+    maxW: 7,
+    maxH: 7
   },
   {
     id: 'w4',
-    name: 'Stock Market',
-    profiles: ['investment'],
+    name: 'Events',
+    profiles: ['base'],
     size: 'medium',
     icon: FiTrendingUp,
     content: <Text>Stock Market Content</Text>,
