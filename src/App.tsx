@@ -27,6 +27,11 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
+import {
+  TopicsWidget
+} from './components';
+
+
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface LayoutItem {
@@ -119,15 +124,15 @@ const widgets: Widget[] = [
   },
   {
     id: 'w5',
-    name: 'Investment Portfolio',
-    profiles: ['investment'],
-    size: 'medium',
-    icon: FiPieChart,
-    content: <Text>Investment Portfolio Content</Text>,
+    name: 'Topics',
+    profiles: ['investment', 'risk'],
+    size: 'large',
+    icon:FiTrendingUp,
+    content:<TopicsWidget />,
     minW: 3,
     minH: 3,
-    maxW: 4,
-    maxH: 4
+    maxW: 5,
+    maxH: 5
   },
 ];
 
