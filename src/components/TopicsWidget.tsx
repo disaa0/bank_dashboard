@@ -1,78 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Box,
-  VStack,
-  HStack,
-  Input,
-  Button,
-  Text,
-  IconButton,
-  Wrap,
-  WrapItem,
-  useColorModeValue,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
-  PopoverArrow,
-  PopoverCloseButton,
+  Box, VStack, HStack, Input, Button, Text, IconButton, Wrap, WrapItem,
+  useColorModeValue, Popover, PopoverTrigger, PopoverContent, PopoverBody,
+  PopoverArrow, PopoverCloseButton, Select, Checkbox, Divider,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton,
+  Table, Thead, Tbody, Tr, Th, Td, Accordion, AccordionItem, AccordionButton,
+  AccordionPanel, AccordionIcon, Tooltip, useToast
 } from "@chakra-ui/react";
-import { FiSearch, FiX, FiSettings } from "react-icons/fi";
+import { FiSearch, FiX, FiSettings, FiInfo, FiPlus } from "react-icons/fi";
+import debounce from 'lodash/debounce';
 
 interface TopicData {
-  type: 'stock' | 'currency';
+  type: 'stock' | 'currency' | 'commodity' | 'index';
   name: string;
   value: string;
   change: string;
+  category: string;
+  details?: {
+    [key: string]: string;
+  };
 }
 
-// Mock function to fetch topic data
-const fetchTopicData = async (topic: string): Promise<TopicData> => {
-  // In a real application, this would be an API call
+// Mock WebSocket for real-time updates
+const mockWebSocket = {
+  onmessage: null as ((event: { data: string }) => void) | null,
+  send: (data: string) => {
+    console.log('WebSocket message sent:', data);
+  },
+  close: () => {
+    console.log('WebSocket closed');
+  }
+};
+
+// Mock API function
+const fetchTopicData = async (query: string): Promise<TopicData[]> => {
   await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-  return {
-    type: Math.random() > 0.5 ? 'stock' : 'currency',
-    name: topic,
-    value: (Math.random() * 1000).toFixed(2),
-    change: (Math.random() * 10 - 5).toFixed(2),
-  };
+  const types = ['stock', 'currency', 'commodity', 'index'];
+  return types.flatMap(type =>
+    Array(3).fill(null).map(() => ({
+      type: type as TopicData['type'],
+      name: `${query}_${Math.random().toString(36).substring(3)}`,
+      value: (Math.random() * 1000).toFixed(2),
+      change: (Math.random() * 10 - 5).toFixed(2),
+      category: type.charAt(0).toUpperCase() + type.slice(1),
+      details: {
+        'Market Cap': '$' + (Math.random() * 1000000000).toFixed(2),
+        'Volume': (Math.random() * 1000000).toFixed(0),
+        'P/E Ratio': (Math.random() * 30).toFixed(2),
+      }
+    }))
+  );
 };
 
 interface TopicItemProps {
-  topic: string;
-  onRemove: (topic: string) => void;
+  topic: TopicData;
+  onRemove: (topic: TopicData) => void;
+  onShowDetails: (topic: TopicData) => void;
 }
 
-const TopicItem: React.FC<TopicItemProps> = ({ topic, onRemove }) => {
-  const [data, setData] = useState<TopicData | null>(null);
+
+const TopicItem: React.FC<TopicItemProps> = ({ topic, onRemove, onShowDetails }) => {
   const bgColor = useColorModeValue('gray.100', 'gray.700');
-
-  useEffect(() => {
-    fetchTopicData(topic).then(setData);
-  }, [topic]);
-
-  if (!data) return null;
-
-  const changeColor = parseFloat(data.change) >= 0 ? 'green.500' : 'red.500';
+  const changeColor = parseFloat(topic.change) >= 0 ? 'green.500' : 'red.500';
 
   return (
     <WrapItem>
-      <Box bg={bgColor} p={2} borderRadius="md">
-        <HStack>
+      <Box bg={bgColor} p={2} borderRadius="md" width="200px" boxShadow="sm">
+        <HStack justifyContent="space-between">
           <VStack align="start" spacing={0}>
-            <Text fontWeight="bold">{data.name}</Text>
-            <Text fontSize="sm">{data.type === 'stock' ? 'Stock' : 'Currency'}</Text>
+            <Tooltip label={topic.name}>
+              <Text fontWeight="bold" fontSize="sm" isTruncated maxWidth="100px">{topic.name}</Text>
+            </Tooltip>
+            <Text fontSize="xs" color="gray.500">{topic.type}</Text>
           </VStack>
           <VStack align="end" spacing={0}>
-            <Text>{data.value}</Text>
-            <Text color={changeColor} fontSize="sm">{data.change}%</Text>
+            <Text fontSize="sm" fontWeight="medium">{topic.value}</Text>
+            <Text color={changeColor} fontSize="xs" fontWeight="bold">{topic.change}%</Text>
           </VStack>
-          <IconButton
-            icon={<FiX />}
-            size="sm"
-            aria-label="Remove topic"
-            onClick={() => onRemove(topic)}
-          />
+          <HStack>
+            <IconButton
+              icon={<FiInfo />}
+              size="xs"
+              aria-label="Show details"
+              onClick={() => onShowDetails(topic)}
+              variant="ghost"
+            />
+            <IconButton
+              icon={<FiX />}
+              size="xs"
+              aria-label="Remove topic"
+              onClick={() => onRemove(topic)}
+              variant="ghost"
+            />
+          </HStack>
         </HStack>
       </Box>
     </WrapItem>
@@ -80,54 +100,218 @@ const TopicItem: React.FC<TopicItemProps> = ({ topic, onRemove }) => {
 };
 
 const TopicsWidget: React.FC = () => {
-  const [topics, setTopics] = useState<string[]>(['AAPL', 'GOOGL', 'USD/EUR']);
+  const [topics, setTopics] = useState<TopicData[]>([]);
+  const [searchResults, setSearchResults] = useState<TopicData[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<TopicData | null>(null);
+  const [sortOption, setSortOption] = useState<string>('name');
+  const webSocketRef = useRef<WebSocket | null>(null);
+  const toast = useToast();
 
-  const addTopic = () => {
-    if (searchTerm && !topics.includes(searchTerm)) {
-      setTopics([...topics, searchTerm]);
-      setSearchTerm('');
+  useEffect(() => {
+    // Load topics from local storage
+    const savedTopics = localStorage.getItem('topics');
+    if (savedTopics) {
+      setTopics(JSON.parse(savedTopics));
     }
+
+    // Initialize WebSocket connection
+    webSocketRef.current = mockWebSocket as unknown as WebSocket;
+    webSocketRef.current.onmessage = handleWebSocketMessage;
+
+    return () => {
+      if (webSocketRef.current) {
+        webSocketRef.current.close();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Save topics to local storage whenever they change
+    localStorage.setItem('topics', JSON.stringify(topics));
+  }, [topics]);
+
+  const handleWebSocketMessage = (event: { data: string }) => {
+    const updatedTopic = JSON.parse(event.data) as TopicData;
+    setTopics(prevTopics =>
+      prevTopics.map(topic =>
+        topic.name === updatedTopic.name ? { ...topic, ...updatedTopic } : topic
+      )
+    );
   };
 
-  const removeTopic = (topicToRemove: string) => {
-    setTopics(topics.filter(topic => topic !== topicToRemove));
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query) {
+        const results = await fetchTopicData(query);
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSearch(searchTerm);
+  }, [searchTerm, debouncedSearch]);
+
+  const addTopic = (topic: TopicData) => {
+    if (!topics.some(t => t.name === topic.name)) {
+      setTopics([...topics, topic]);
+      if (webSocketRef.current) {
+        webSocketRef.current.send(JSON.stringify({ action: 'subscribe', topic: topic.name }));
+      }
+      toast({
+        title: "Topic added",
+        description: `${topic.name} has been added to your watchlist.`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+    setSearchTerm('');
+    setSearchResults([]);
   };
+
+  const removeTopic = (topicToRemove: TopicData) => {
+    setTopics(topics.filter(topic => topic.name !== topicToRemove.name));
+    if (webSocketRef.current) {
+      webSocketRef.current.send(JSON.stringify({ action: 'unsubscribe', topic: topicToRemove.name }));
+    }
+    toast({
+      title: "Topic removed",
+      description: `${topicToRemove.name} has been removed from your watchlist.`,
+      status: "info",
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  const sortTopics = (topicsToSort: TopicData[]): TopicData[] => {
+    return [...topicsToSort].sort((a, b) => {
+      switch (sortOption) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'value':
+          return parseFloat(b.value) - parseFloat(a.value);
+        case 'change':
+          return parseFloat(b.change) - parseFloat(a.change);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const groupedTopics = topics.reduce((acc, topic) => {
+    if (!acc[topic.category]) {
+      acc[topic.category] = [];
+    }
+    acc[topic.category].push(topic);
+    return acc;
+  }, {} as { [key: string]: TopicData[] });
 
   return (
-    <Box p={4}>
-      <VStack align="stretch" spacing={4}>
+    <Box
+      width="auto"
+      height="100%"
+      p={4}
+      bg={useColorModeValue('gray.50', 'gray.800')}
+      borderRadius="lg"
+      boxShadow="md"
+      overflow="hidden"
+      display="flex"
+      flexDirection="column"
+    >
+      <VStack align="stretch" spacing={4} flex="0 0 auto">
         <HStack>
           <Input
             placeholder="Search topics..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            bg={useColorModeValue('white', 'gray.700')}
           />
-          <Button leftIcon={<FiSearch />} onClick={addTopic}>
-            Add
+          <Button
+            onClick={() => setSortOption(sortOption === 'name' ? 'value' : 'name')}
+            size="sm"
+          >
+            Sort: {sortOption === 'name' ? 'Name' : 'Value'}
           </Button>
-          <Popover>
-            <PopoverTrigger>
-              <IconButton icon={<FiSettings />} aria-label="Settings" />
-            </PopoverTrigger>
-            <PopoverContent>
-              <PopoverArrow />
-              <PopoverCloseButton />
-              <PopoverBody>
-                <Text>Widget Settings</Text>
-                {/* Add settings options here */}
-              </PopoverBody>
-            </PopoverContent>
-          </Popover>
         </HStack>
-        <Wrap spacing={2}>
-          {topics.map(topic => (
-            <TopicItem key={topic} topic={topic} onRemove={removeTopic} />
-          ))}
-        </Wrap>
+        {searchResults.length > 0 && (
+          <Box>
+            <Text fontWeight="bold" mb={2}>Search Results</Text>
+            <Wrap spacing={2}>
+              {searchResults.map(result => (
+                <WrapItem key={result.name}>
+                  <Button
+                    size="sm"
+                    onClick={() => addTopic(result)}
+                    leftIcon={<FiPlus />}
+                    colorScheme="blue"
+                  >
+                    {result.name}
+                  </Button>
+                </WrapItem>
+              ))}
+            </Wrap>
+          </Box>
+        )}
       </VStack>
+      <Box flex="1 1 auto" overflow="auto" mt={4}>
+        <Accordion allowMultiple defaultIndex={[0, 1, 2, 3]}>
+          {Object.entries(groupedTopics).map(([category, categoryTopics]) => (
+            <AccordionItem key={category}>
+              <h2>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left" fontWeight="bold">
+                    {category} ({categoryTopics.length})
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel pb={4}>
+                <Wrap spacing={2}>
+                  {sortTopics(categoryTopics).map(topic => (
+                    <TopicItem
+                      key={topic.name}
+                      topic={topic}
+                      onRemove={removeTopic}
+                      onShowDetails={(topic) => setSelectedTopic(topic)}
+                    />
+                  ))}
+                </Wrap>
+              </AccordionPanel>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </Box>
+      <Modal isOpen={!!selectedTopic} onClose={() => setSelectedTopic(null)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{selectedTopic?.name}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Metric</Th>
+                  <Th>Value</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {selectedTopic?.details && Object.entries(selectedTopic.details).map(([key, value]) => (
+                  <Tr key={key}>
+                    <Td>{key}</Td>
+                    <Td>{value}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
-
 export default TopicsWidget;

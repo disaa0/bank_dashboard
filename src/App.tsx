@@ -26,6 +26,7 @@ import { IconType } from 'react-icons';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import debounce from 'lodash/debounce';
 
 import {
   TopicsWidget,
@@ -70,7 +71,6 @@ type Widget = {
 
 const profiles: Profile[] = [
   { id: 'base', name: 'Base Profile', fixed: true },
-  { id: 'risk', name: 'Risk Management' },
   { id: 'investment', name: 'Investment' },
 ];
 
@@ -102,7 +102,7 @@ const widgets: Widget[] = [
   {
     id: 'w3',
     name: 'Currency Tracker',
-    profiles: ['risk'],
+    profiles: ['investment'],
     size: 'medium',
     icon: FiGlobe,
     content: <Text>Currency Tracker Content</Text>,
@@ -114,7 +114,7 @@ const widgets: Widget[] = [
   {
     id: 'w4',
     name: 'Stock Market',
-    profiles: ['risk', 'investment'],
+    profiles: ['investment'],
     size: 'medium',
     icon: FiTrendingUp,
     content: <Text>Stock Market Content</Text>,
@@ -126,7 +126,7 @@ const widgets: Widget[] = [
   {
     id: 'w5',
     name: 'Topics',
-    profiles: ['investment', 'risk'],
+    profiles: ['investment'],
     size: 'large',
     icon: FiTrendingUp,
     content: <TopicsWidget />,
